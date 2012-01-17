@@ -3,7 +3,7 @@
 %define release 2
 
 Name:           %{name}
-Summary:        Bumblebee - support for Optimus laptops on Linux!
+Summary:        Bumblebee - support for NVidia Optimus laptops on Linux!
 Version:        %{version}
 Release:        %{release}
 Source0:        %{name}-%{version}.tar.gz
@@ -52,4 +52,3 @@ rm -rf %{buildroot}
 update-alternatives --set gl_conf /etc/ld.so.conf.d/GL/standard.conf
 systemctl enable bumblebeed.service
 systemctl start bumblebeed.service
-
