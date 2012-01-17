@@ -13,7 +13,7 @@ Group:          System/Kernel and hardware
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-buildroot
 License:        GPLv3
 Requires:       x11-driver-video-nvidia-current VirtualGL dkms-bbswitch
-BuildRequires:  help2man X11-devel
+BuildRequires:  help2man X11-devel glib-2.0-devel
 
 %description
 Bumblebee daemon is a rewrite of the original Bumblebee service, providing an elegant and stable means of managing Optimus hybrid graphics chipsets.
