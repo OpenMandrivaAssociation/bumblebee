@@ -54,20 +54,3 @@ groupadd -f bumblebee
 update-alternatives --set gl_conf /etc/ld.so.conf.d/GL/standard.conf
 systemctl enable bumblebeed.service
 systemctl start bumblebeed.service
-
-%changelog 
-* Wed Jan 18 2012 Jaron Viëtor <thulinma@thulinma.com> 2.99-3mdk
-- Now auto-creates bumblebee group after install
-
-* Tue Jan 17 2012 Александр Казанцев <kazancas@mandriva.org> 2.99-2
-+ Revision: 762044
-- add libbsd-devel as BR
-- add glib-2.0-devel to BR
-- imported package bumblebee
-
-* Mon Jan 16 2012 Jaron Viëtor <thulinma@thulinma.com> 2.99-2mdk
-- Improved systemd service file, daemon output now goes to dmesg
-- Added dkms-bbswitch requirement
-
-* Sun Jan 15 2012 Jaron Viëtor <thulinma@thulinma.com> 2.99-1mdk
-- Initial package
