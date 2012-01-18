@@ -50,7 +50,14 @@ rm -rf %{buildroot}
 %{_mandir}/man1/optirun.1*
 
 %post
-groupadd -f bumblebee
+if
+    getent group bumblebee >/dev/null
+then
+    : OK group bumblebee already present
+else
+    groupadd -r bumblebee 2>/dev/null || :
+fi
 update-alternatives --set gl_conf /etc/ld.so.conf.d/GL/standard.conf
 systemctl enable bumblebeed.service
 systemctl start bumblebeed.service
+
