@@ -1,13 +1,13 @@
 %define name    bumblebee
-%define version 2.99
-%define release 3
+%define version 3.0
+%define release 1
 
 Name:           %{name}
 Summary:        Bumblebee - support for NVidia Optimus laptops on Linux!
 Version:        %{version}
 Release:        %{release}
-Source0:        %{name}-%{version}.tar.gz
-URL:            https://github.com/Bumblebee-Project
+Source0:        http://bumblebee-project.org/%{name}-%{version}.tar.gz
+URL:            http://bumblebee-project.org
 
 Group:          System/Kernel and hardware
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-buildroot
@@ -30,6 +30,7 @@ A primary goal of this project is to not only enable use of the discrete GPU for
 %install
 rm -rf %{buildroot}
 %makeinstall
+rm -f %{buildroot}/usr/share/doc/bumblebee/README.markdown %{buildroot}/usr/share/doc/bumblebee/RELEASE_NOTES_3_0
 mkdir -p %{buildroot}/etc/systemd/system
 cp scripts/systemd/bumblebeed.service %{buildroot}/etc/systemd/system/bumblebeed.service
 
@@ -38,12 +39,13 @@ rm -rf %{buildroot}
 
 %files
 %defattr(0755,root,root)
+%doc README.markdown doc/RELEASE_NOTES_3_0
 %{_sysconfdir}/bash_completion.d/bumblebee
 %{_sysconfdir}/bumblebee/bumblebee.conf
 %{_sysconfdir}/bumblebee/xorg.conf.nouveau
 %{_sysconfdir}/bumblebee/xorg.conf.nvidia
 %{_sysconfdir}/systemd/system/bumblebeed.service
-%{_bindir}/bumblebeed
+%{_sbindir}/bumblebeed
 %{_bindir}/optirun
 %{_bindir}/bumblebee-bugreport
 %{_mandir}/man1/bumblebeed.1*
@@ -61,3 +63,4 @@ update-alternatives --set gl_conf /etc/ld.so.conf.d/GL/standard.conf
 systemctl enable bumblebeed.service
 systemctl start bumblebeed.service
 
+%changelog 
