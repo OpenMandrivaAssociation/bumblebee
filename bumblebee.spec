@@ -62,5 +62,3 @@ fi
 update-alternatives --set gl_conf /etc/ld.so.conf.d/GL/standard.conf
 systemctl enable bumblebeed.service
 systemctl start bumblebeed.service
-
-%changelog 
