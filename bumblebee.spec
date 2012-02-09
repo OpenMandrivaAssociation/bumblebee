@@ -1,19 +1,19 @@
 %define name    bumblebee
 %define version 3.0
-%define release 2
+%define release 3
 
 Name:           %{name}
 Summary:        Bumblebee - support for NVidia Optimus laptops on Linux!
 Version:        %{version}
 Release:        %{release}
 Source0:        http://bumblebee-project.org/%{name}-%{version}.tar.gz
-Source1:		bumblebee-mdv.tar.gz
+Source1:	bumblebee-mdv.tar.gz
 URL:            http://bumblebee-project.org
 
 Group:          System/Kernel and hardware
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-buildroot
 License:        GPLv3
-Requires:       x11-driver-video-nvidia-current VirtualGL dkms-bbswitch
+Requires:       x11-driver-video-nvidia-current VirtualGL dkms-bbswitch gettext
 BuildRequires:  help2man X11-devel glib2-devel gettext
 BuildRequires:	%{_lib}bsd-devel >= 0.2.0
 
