@@ -11,7 +11,6 @@ Source1:	bumblebee-mdv.tar.gz
 URL:            http://bumblebee-project.org
 
 Group:          System/Kernel and hardware
-BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-buildroot
 License:        GPLv3
 Requires:       x11-driver-video-nvidia-current VirtualGL dkms-bbswitch gettext
 BuildRequires:  help2man X11-devel glib2-devel gettext
@@ -29,7 +28,6 @@ A primary goal of this project is to not only enable use of the discrete GPU for
 %make
 
 %install
-rm -rf %{buildroot}
 %makeinstall
 rm -f %{buildroot}/%{_datadir}/doc/bumblebee/README.markdown %{buildroot}/%{_datadir}/doc/bumblebee/RELEASE_NOTES_3_0
 mkdir -p %{buildroot}/etc/systemd/system
@@ -54,9 +52,6 @@ done
 #icons
 mkdir -p %{buildroot}/%{_iconsdir}
 cp bumblebee-mdv/bumblebee.png %{buildroot}/%{_iconsdir}
-
-%clean
-rm -rf %{buildroot}
 
 %files
 %defattr(0755,root,root)
