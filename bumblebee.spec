@@ -1,6 +1,6 @@
 %define name    bumblebee
 %define version 3.0
-%define release 4
+%define release 5
 
 Name:           %{name}
 Summary:        Bumblebee - support for NVidia Optimus laptops on Linux!
