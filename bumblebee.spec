@@ -1,15 +1,18 @@
-Name:           bumblebee
-Summary:        Bumblebee - support for NVidia Optimus laptops on Linux!
-Version:        3.2.1
-Release:        1
-Source0:        http://bumblebee-project.org/%{name}-%{version}.tar.gz
-Source1:	bumblebee-mdv.tar.gz
-URL:            http://bumblebee-project.org
+Name:			bumblebee
+Summary:		Bumblebee - support for NVidia Optimus laptops on Linux!
+Version:		3.2.1
+Release:		2
+Source0:		http://bumblebee-project.org/%{name}-%{version}.tar.gz
+Source1:		bumblebee-mdv.tar.gz
+URL:			http://bumblebee-project.org
 
-Group:          System/Kernel and hardware
-License:        GPLv3
-Requires:       x11-driver-video-nvidia-current VirtualGL dkms-bbswitch gettext
-BuildRequires:  help2man gettext
+Group:			System/Kernel and hardware
+License:		GPLv3
+Requires:		x11-driver-video-nvidia-current
+Requires:		VirtualGL
+Requires:		dkms-bbswitch
+Requires:		gettext
+BuildRequires:	help2man gettext
 BuildRequires:	pkgconfig(glib-2.0) pkgconfig(x11)
 BuildRequires:	pkgconfig(libbsd) >= 0.2.0
 
