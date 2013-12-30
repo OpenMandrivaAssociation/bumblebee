@@ -1,3 +1,6 @@
+# Use nouveau driver by default
+%bcond_with nvidia
+
 Name:			bumblebee
 Summary:		Bumblebee - support for NVidia Optimus laptops on Linux!
 Version:		3.2.1
@@ -8,13 +11,18 @@ URL:			http://bumblebee-project.org
 
 Group:			System/Kernel and hardware
 License:		GPLv3
-Requires:		x11-driver-video-nvidia-current
 Requires:		VirtualGL
 Requires:		dkms-bbswitch
 Requires:		gettext
 BuildRequires:	help2man gettext
 BuildRequires:	pkgconfig(glib-2.0) pkgconfig(x11)
 BuildRequires:	pkgconfig(libbsd) >= 0.2.0
+Requires(post,postun): rpm-helper
+%if %{with nvidia}
+Suggests:		x11-driver-video-nvidia-current
+%else
+Requires:		x11-driver-video-nouveau
+%endif
 
 %description
 Bumblebee daemon is a rewrite of the original Bumblebee service, providing an
@@ -28,7 +36,23 @@ it's not in use.
 %setup -q -a1
 
 %build
-%configure CONF_DRIVER=nvidia CONF_DRIVER_MODULE_NVIDIA=nvidia-current CONF_LDPATH_NVIDIA=/usr/lib64/nvidia-current:/usr/lib/nvidia-current CONF_MODPATH_NVIDIA=/usr/lib64/nvidia-current/xorg,/usr/lib/nvidia-current/xorg,/usr/lib64/xorg/extra-modules,/usr/lib64/xorg/modules,/usr/lib/xorg/extra-modules,/usr/lib/xorg/modules
+%configure2_5x \
+
+%if %{with nvidia}
+		CONF_DRIVER=nvidia \
+	 	CONF_DRIVER_MODULE_NVIDIA=nvidia-current \
+	 	%else
+	 	CONF_DRIVER=nouveau \
+	 	%endif
+	 	%ifarch x86_64
+	 	CONF_LDPATH_NVIDIA=%{_usr}/lib/nvidia-current:%{_libdir}/nvidia-current \
+	 	CONF_MODPATH_NVIDIA=%{_usr}/lib/nvidia-current/xorg,%{_libdir}/nvidia-current/xorg,%{_usr}/lib/xorg/modules,%{_libdir}/xorg/modules,%{_usr}/lib/xorg/extra-modules,%{_usr}/xorg/extra-modules
+	 	%else
+	 	CONF_LDPATH_NVIDIA=%{_usr}/lib/nvidia-current \
+	 	CONF_MODPATH_NVIDIA=%{_usr}/lib/nvidia-current/xorg,%{_usr}/lib/xorg/modules,%{_usr}/lib/xorg/extra-modules
+%endif
+
+
 %make
 
 %install
@@ -81,19 +105,24 @@ cp bumblebee-mdv/bumblebee.png %{buildroot}/%{_iconsdir}
 /lib/udev/rules.d/99-bumblebee-nvidia-dev.rules
 
 %pre
-# Add bumblebee group
+%_pre_groupadd %{name}
+if [ "$1" -eq "1" ]; then
+	users=$(getent passwd | awk -F: '$3 >= 500 && $3 < 60000 {print $1}')
+ 		for user in $users; do
+	 		gpasswd -a $user bumblebee
+ 		done
+	/usr/sbin/update-alternatives --set gl_conf %{_sysconfdir}/ld.so.conf.d/GL/standard.conf
+fi
 
-	if getent group bumblebee > /dev/null
-	then
-	: # group already exists
-	else
-	groupadd -r bumblebee 2>/dev/null || :
-	fi
 
 %post
 update-alternatives --set gl_conf /etc/ld.so.conf.d/GL/standard.conf
-systemctl enable bumblebeed.service
-systemctl start bumblebeed.service
+
+%systemd_post bumblebeed.service
 
 %postun
-groupdel bumblebee
+if [ "$1" -eq "0" ]; then
+	/usr/sbin/groupdel bumblebee
+fi
+
+%systemd_postun bumblebeed.service
