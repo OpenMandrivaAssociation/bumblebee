@@ -1,3 +1,6 @@
+removed_sources:
+  bumblebee-3.0.tar.gz: b5afc562e33fa23abd2cb9b83dee6d549d133f23
 sources:
-  "bumblebee-3.0.tar.gz:"	b5afc562e33fa23abd2cb9b83dee6d549d133f23
-  "bumblebee-mdv.tar.gz:"	1e6bcc9d6a7c56f5015a4116398f33e850eb0515
+  bumblebee-3.2.1.tar.gz: a715f4aa1b0c24dd4352ff7e0bc390f1e4e03cd9
+  bumblebee-mdv.tar.gz: 1e6bcc9d6a7c56f5015a4116398f33e850eb0515
+
