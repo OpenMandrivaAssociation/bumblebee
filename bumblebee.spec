@@ -1,35 +1,63 @@
-%define name    bumblebee
-%define version 3.0
-%define release 3
+# Use nouveau driver by default
+%bcond_with nvidia
 
-Name:           %{name}
-Summary:        Bumblebee - support for NVidia Optimus laptops on Linux!
-Version:        %{version}
-Release:        %{release}
-Source0:        http://bumblebee-project.org/%{name}-%{version}.tar.gz
-Source1:	bumblebee-mdv.tar.gz
-URL:            http://bumblebee-project.org
+Name:			bumblebee
+Summary:		Bumblebee - support for NVidia Optimus laptops on Linux!
+Version:		3.2.1
+Release:		2
+Source0:		http://bumblebee-project.org/%{name}-%{version}.tar.gz
+Source1:		bumblebee-mdv.tar.gz
+URL:			http://bumblebee-project.org
 
-Group:          System/Kernel and hardware
-License:        GPLv3
-Requires:       x11-driver-video-nvidia-current VirtualGL dkms-bbswitch gettext
-BuildRequires:  help2man X11-devel glib2-devel gettext
-BuildRequires:	%{_lib}bsd-devel >= 0.2.0
+Group:			System/Kernel and hardware
+License:		GPLv3
+Requires:		VirtualGL
+Requires:		dkms-bbswitch
+Requires:		gettext
+BuildRequires:	help2man gettext
+BuildRequires:	pkgconfig(glib-2.0) pkgconfig(x11)
+BuildRequires:	pkgconfig(libbsd) >= 0.2.0
+Requires(post,postun): rpm-helper
+%if %{with nvidia}
+Suggests:		x11-driver-video-nvidia-current
+%else
+Requires:		x11-driver-video-nouveau
+%endif
 
 %description
-Bumblebee daemon is a rewrite of the original Bumblebee service, providing an elegant and stable means of managing Optimus hybrid graphics chipsets.
-A primary goal of this project is to not only enable use of the discrete GPU for rendering, but also to enable smart power management of the dGPU when it's not in use.
+Bumblebee daemon is a rewrite of the original Bumblebee service, providing an
+elegant and stable means of managing Optimus hybrid graphics chipsets.
+
+A primary goal of this project is to not only enable use of the discrete GPU
+for rendering, but also to enable smart power management of the dGPU when
+it's not in use.
 
 %prep
 %setup -q -a1
 
 %build
-%configure CONF_DRIVER=nvidia CONF_DRIVER_MODULE_NVIDIA=nvidia-current CONF_LDPATH_NVIDIA=/usr/lib64/nvidia-current:/usr/lib/nvidia-current CONF_MODPATH_NVIDIA=/usr/lib64/nvidia-current/xorg,/usr/lib/nvidia-current/xorg,/usr/lib64/xorg/extra-modules,/usr/lib64/xorg/modules,/usr/lib/xorg/extra-modules,/usr/lib/xorg/modules
+%configure2_5x \
+
+%if %{with nvidia}
+		CONF_DRIVER=nvidia \
+	 	CONF_DRIVER_MODULE_NVIDIA=nvidia-current \
+	 	%else
+	 	CONF_DRIVER=nouveau \
+	 	%endif
+	 	%ifarch x86_64
+	 	CONF_LDPATH_NVIDIA=%{_usr}/lib/nvidia-current:%{_libdir}/nvidia-current \
+	 	CONF_MODPATH_NVIDIA=%{_usr}/lib/nvidia-current/xorg,%{_libdir}/nvidia-current/xorg,%{_usr}/lib/xorg/modules,%{_libdir}/xorg/modules,%{_usr}/lib/xorg/extra-modules,%{_usr}/xorg/extra-modules
+	 	%else
+	 	CONF_LDPATH_NVIDIA=%{_usr}/lib/nvidia-current \
+	 	CONF_MODPATH_NVIDIA=%{_usr}/lib/nvidia-current/xorg,%{_usr}/lib/xorg/modules,%{_usr}/lib/xorg/extra-modules
+%endif
+
+
 %make
 
 %install
-%makeinstall
-rm -f %{buildroot}/%{_datadir}/doc/bumblebee/README.markdown %{buildroot}/%{_datadir}/doc/bumblebee/RELEASE_NOTES_3_0
+%makeinstall_std
+rm -f %{buildroot}/%{_datadir}/doc/bumblebee/README.markdown
 mkdir -p %{buildroot}/etc/systemd/system
 cp scripts/systemd/bumblebeed.service %{buildroot}/etc/systemd/system/bumblebeed.service
 
@@ -55,11 +83,14 @@ cp bumblebee-mdv/bumblebee.png %{buildroot}/%{_iconsdir}
 
 %files
 %defattr(0755,root,root)
-%doc README.markdown doc/RELEASE_NOTES_3_0
+%doc README.markdown
 %{_sysconfdir}/bash_completion.d/bumblebee
+%dir %{_sysconfdir}/bumblebee
 %{_sysconfdir}/bumblebee/bumblebee.conf
 %{_sysconfdir}/bumblebee/xorg.conf.nouveau
 %{_sysconfdir}/bumblebee/xorg.conf.nvidia
+%dir %{_sysconfdir}/bumblebee/xorg.conf.d
+%{_sysconfdir}/bumblebee/xorg.conf.d/10-dummy.conf
 %{_sysconfdir}/systemd/system/bumblebeed.service
 %{_sbindir}/bumblebeed
 %{_bindir}/optirun
@@ -71,21 +102,27 @@ cp bumblebee-mdv/bumblebee.png %{buildroot}/%{_iconsdir}
 %{_iconsdir}/bumblebee.png
 %{_localedir}/*
 %{_datadir}/polkit-1/actions/bumblebee.add-groups.policy
+/lib/udev/rules.d/99-bumblebee-nvidia-dev.rules
 
 %pre
-# Add bumblebee group
+%_pre_groupadd %{name}
+if [ "$1" -eq "1" ]; then
+	users=$(getent passwd | awk -F: '$3 >= 500 && $3 < 60000 {print $1}')
+ 		for user in $users; do
+	 		gpasswd -a $user bumblebee
+ 		done
+	/usr/sbin/update-alternatives --set gl_conf %{_sysconfdir}/ld.so.conf.d/GL/standard.conf
+fi
 
-	if getent group bumblebee > /dev/null
-	then
-	: # group already exists
-	else
-	groupadd -r bumblebee 2>/dev/null || :
-	fi
 
 %post
 update-alternatives --set gl_conf /etc/ld.so.conf.d/GL/standard.conf
-systemctl enable bumblebeed.service
-systemctl start bumblebeed.service
+
+%systemd_post bumblebeed.service
 
 %postun
-groupdel bumblebee
+if [ "$1" -eq "0" ]; then
+	/usr/sbin/groupdel bumblebee
+fi
+
+%systemd_postun bumblebeed.service
