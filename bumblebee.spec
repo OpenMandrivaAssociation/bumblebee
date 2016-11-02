@@ -4,7 +4,7 @@
 Name:			bumblebee
 Summary:		Bumblebee - support for NVidia Optimus laptops on Linux!
 Version:		3.2.1
-Release:		6
+Release:		1
 Source0:		http://bumblebee-project.org/%{name}-%{version}.tar.gz
 Source1:		bumblebee-mdv.tar.gz
 URL:			http://bumblebee-project.org
