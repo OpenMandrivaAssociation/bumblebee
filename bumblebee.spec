@@ -153,6 +153,7 @@ done
 %dir %{_sysconfdir}/bumblebee/xorg.conf.d
 %{_sysconfdir}/bumblebee/xorg.conf.d/10-dummy.conf
 %{_sysconfdir}/systemd/system/bumblebeed.service
+%{_sysconfdir}/bumblebee/modprobe.conf
 %{_presetdir}/86-bumblebee.preset
 %{_sbindir}/bumblebeed
 %{_bindir}/optirun
