@@ -1,0 +1,154 @@
+From 3497ad78fcc3e8a4591db8bb6ff71acbaa722605 Mon Sep 17 00:00:00 2001
+From: Evgenii Shatokhin <eugene.shatokhin@rosalab.ru>
+Date: Sun, 1 May 2016 18:44:57 +0300
+Subject: [PATCH] Unload modules one by one and in the correct order
+
+modprobe returns error sometimes if the module to be unloaded does not
+exist. Sometimes, however, 'modprobe -r nvidia' reports no error but
+does not unload the module all the same (this happens if the module is
+renamed and a special alias is used).
+
+So, it is more reliable to unload the modules one by one and in correct
+order, based on their possible dependencies.
+
+While at it, I have refactored module_unload() here.
+---
+ src/module.c | 110 ++++++++++++++++++-----------------------------------------
+ 1 file changed, 33 insertions(+), 77 deletions(-)
+
+diff --git a/src/module.c b/src/module.c
+index db9736a..2f92865 100644
+--- a/src/module.c
++++ b/src/module.c
+@@ -84,95 +84,51 @@ int module_load(char *module_name, char *driver) {
+   return 1;
+ }
+ 
+-/**
+- * Attempts to unload a module if loaded, for ten seconds before
+- * giving up
+- *
+- * @param driver The name of the driver (not a filename)
+- * @return 1 if the driver is succesfully unloaded, 0 otherwise
+- */
+-int module_unload(char *driver) {
+-
+-  if (module_is_loaded("nvidia_uvm") == 1) {
+-    int retries = 30;
+-    bb_log(LOG_INFO, "Unloading nvidia_uvm driver\n");
+-    char *mod_argv[] = {
+-      "modprobe",
+-      "-r",
+-      "nvidia_uvm",
+-      "nvidia_modeset",
+-      NULL
+-    };
+-    bb_run_fork_wait(mod_argv, 10);
+-    while (retries-- > 0 && module_is_loaded("nvidia_uvm") == 1) {
+-      usleep(100000);
+-    }
+-    if (module_is_loaded(driver) == 1) {
+-      bb_log(LOG_ERR, "Unloading %s driver timed out.\n", driver);
+-      return 0;
+-    }
+-  }
++/* Tries to unload the given module 'retries' times.
++ * Returns 1 if successful and also if the module is not loaded.
++ * Returns 0 on error. */
++int module_unload_impl(char *modname, int retries) {
++  if (!module_is_loaded(modname))
++    return 1;
+ 
+-  else if (module_is_loaded("nvidia_drm") == 1) {
+-    int retries = 30;
+-    bb_log(LOG_INFO, "Unloading nvidia_drm driver\n");
+-    char *mod_argv[] = {
++  bb_log(LOG_INFO, "Unloading module \"%s\".\n", modname);
++  char *mod_argv[] = {
+       "modprobe",
+       "-r",
+-      "nvidia_drm",
++      modname,
+       NULL
+-    };
+-    bb_run_fork_wait(mod_argv, 10);
+-    while (retries-- > 0 && module_is_loaded("nvidia_drm") == 1) {
+-      usleep(100000);
+-    }
+-    if (module_is_loaded(driver) == 1) {
+-      bb_log(LOG_ERR, "Unloading %s driver timed out.\n", driver);
+-      return 0;
+-    }
+-  }
++  };
+ 
+-  else if (module_is_loaded("nvidia_modeset") == 1) {
+-    int retries = 30;
+-    bb_log(LOG_INFO, "Unloading nvidia_modeset driver\n");
+-    char *mod_argv[] = {
+-      "modprobe",
+-      "-r",
+-      "nvidia_modeset",
+-      NULL
+-    };
+-    bb_run_fork_wait(mod_argv, 10);
+-    while (retries-- > 0 && module_is_loaded("nvidia_modeset") == 1) {
++  bb_run_fork_wait(mod_argv, 10);
++  while (retries-- > 0 && module_is_loaded(modname) == 1) {
+       usleep(100000);
+-    }
+-    if (module_is_loaded(driver) == 1) {
+-      bb_log(LOG_ERR, "Unloading %s driver timed out.\n", driver);
+-      return 0;
+-    }
+   }
+-
+-  else if (module_is_loaded(driver) == 1) {
+-      int retries = 30;
+-      bb_log(LOG_INFO, "Unloading %s driver\n", driver);
+-      char *mod_argv[] = {
+-        "modprobe",
+-        "-r",
+-        driver,
+-        NULL
+-      };
+-      bb_run_fork_wait(mod_argv, 10);
+-      while (retries-- > 0 && module_is_loaded(driver) == 1) {
+-        usleep(100000);
+-      }
+-      if (module_is_loaded(driver) == 1) {
+-        bb_log(LOG_ERR, "Unloading %s driver timed out.\n", driver);
+-        return 0;
+-      }
++  if (module_is_loaded(modname) == 1) {
++    bb_log(LOG_ERR, "Unloading module \"%s\" timed out.\n", modname);
++    return 0;
+   }
+   return 1;
+ }
+ 
+ /**
++ * Attempts to unload a module if loaded, for ten seconds before
++ * giving up
++ *
++ * @param driver The name of the driver (not a filename)
++ * @return 1 if the driver is succesfully unloaded, 0 otherwise
++ */
++int module_unload(char *driver) {
++/* Unload order due to possible dependencies: nvidia_drm, nvidia_uvm,
++ * nvidia_modeset, nvidia. */
++  int retries = 30;
++
++  return (module_unload_impl("nvidia_drm", retries) &&
++          module_unload_impl("nvidia_uvm", retries) &&
++          module_unload_impl("nvidia_modeset", retries) &&
++          module_unload_impl(driver, retries));
++}
++
++/**
+  * Checks whether a kernel module is available for loading
+  *
+  * @param module_name The module name to be checked (filename or alias)
+-- 
+2.6.3
+
