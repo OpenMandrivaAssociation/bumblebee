@@ -26,6 +26,7 @@ BuildRequires:	pkgconfig(glib-2.0)
 BuildRequires:	pkgconfig(x11)
 BuildRequires:	pkgconfig(libbsd) >= 0.2.0
 Requires(post,postun):	rpm-helper
+Excludearch:	%{armx}
 %if %{with nvidia}
 Suggests:	x11-driver-video-nvidia-current
 %else
