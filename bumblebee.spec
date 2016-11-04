@@ -1,5 +1,5 @@
 # Use nouveau driver by default
-%bcond_without nvidia
+%bcond_with nvidia
 
 Name:		bumblebee
 Summary:	Bumblebee - support for NVidia Optimus laptops on Linux!
@@ -73,7 +73,7 @@ cp scripts/systemd/bumblebeed.service %{buildroot}/etc/systemd/system/bumblebeed
 install -d %{buildroot}%{_presetdir}
 cat > %{buildroot}%{_presetdir}/86-bumblebee.preset << EOF
 enable bumblebeed.service
-EO
+EOF
 
 mv %{buildroot}/%{_bindir}/optirun %{buildroot}/%{_bindir}/optirun-bin
 install -m 0755 bumblebee-mdv/bin/bumblebee-add-groups %{buildroot}%{_bindir}/bumblebee-add-groups
