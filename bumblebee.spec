@@ -50,6 +50,7 @@ Bumblebee: https://nouveau.freedesktop.org/wiki/Optimus
 %{_sysconfdir}/bash_completion.d/optirun
 %{_sysconfdir}/modprobe.d/%{name}.conf
 %dir %{_sysconfdir}/bumblebee/
+%dir %{_sysconfdir}/bumblebee/xorg.conf.d
 %config(noreplace) %{_sysconfdir}/bumblebee/xorg.conf.nouveau
 %config(noreplace) %{_sysconfdir}/bumblebee/xorg.conf.nvidia
 %config(noreplace) %{_sysconfdir}/bumblebee/xorg.conf.d/10-dummy.conf
