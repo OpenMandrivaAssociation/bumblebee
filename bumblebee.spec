@@ -21,7 +21,7 @@ Requires(pre):	rpm-helper
 Requires(pre):	update-alternatives
 Requires:	kmod(bbswitch.ko)
 Requires:	%{name}-bin
-
+Excludearch:	%{armx}
 # VirtualGl is the default bridge for upstream, the alternative being primus
 # As of now (3.2.1-5) primus shows better performances and compability, so we use it as default
 Suggests:     VirtualGL
