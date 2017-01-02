@@ -1,99 +1,66 @@
-# Use nouveau driver by default
-%bcond_with nvidia
+# Package should be built in nonfree only, as it only provides features for nvidia-current
+
+%define snap 20170102
 
 Name:		bumblebee
-Summary:	Bumblebee - support for NVidia Optimus laptops on Linux!
 Version:	3.2.1
-Release:	2
-Source0:	http://bumblebee-project.org/%{name}-%{version}.tar.gz
-Source1:	bumblebee-mdv.tar.gz
-URL:		http://bumblebee-project.org
+Release:	3.%{snap}.1
+Summary:	Daemon managing Nvidia Optimus hybrid graphics cards
 Group:		System/Kernel and hardware
-License:	GPLv3
-Patch0:		0001-Dirty-fix-for-issue-699.patch
-Patch1:		0002-Added-nvidia_modeset-detection-for-issue-699.patch
-Patch2:		0003-Fix-nvidia_uvm-just-like-nvidia_modeset.patch
-Patch3:		0004-Workaround-for-nvidia_drm-in-newer-drivers.patch
-Patch4:		0005-Unload-modules-one-by-one-and-in-the-correct-order.patch
-
-Requires:	VirtualGL
-Requires:	%mklibname VirtualGL
-Requires:	dkms-bbswitch
-Requires:	gettext
+License:	GPLv3+
+URL:		https://github.com/Bumblebee-Project/bumblebee
+# git clone -b develop https://github.com/Bumblebee-Project/Bumblebee.git
+# git archive -o bumblebee-3.2.1-`date +%Y%m%d`.tar --prefix=bumblebee-3.2.1/ develop ; xz -9e bumblebee-3.2.1-`date +%Y%m%d`.tar
+Source0:	%{name}-%{version}-%{snap}.tar.xz
 BuildRequires:	help2man
-BuildRequires:	gettext
-BuildRequires:	pkgconfig(glib-2.0)
 BuildRequires:	pkgconfig(x11)
-BuildRequires:	pkgconfig(libbsd) >= 0.2.0
-Requires(post,postun):	rpm-helper
-Excludearch:	%{armx}
-%if %{with nvidia}
-Suggests:	x11-driver-video-nvidia-current
-%else
-Requires:	x11-driver-video-nouveau
-%endif
+BuildRequires:	pkgconfig(glib-2.0)
+BuildRequires:	pkgconfig(libbsd)
+BuildRequires:	pkgconfig(libkmod)
+Requires(pre):	rpm-helper
+Requires(pre):	update-alternatives
+Requires:	kmod(bbswitch.ko)
+Requires:	%{name}-bin
+
+# VirtualGl is the default bridge for upstream, the alternative being primus
+# As of now (3.2.1-5) primus shows better performances and compability, so we use it as default
+Suggests:     VirtualGL
+Suggests:     %mklibname VirtualGL
+
+# Files were moved
+Conflicts:      %{name}-nvidia < 3.2.1-3
 
 %description
-Bumblebee daemon is a rewrite of the original Bumblebee service, providing an
-elegant and stable means of managing Optimus hybrid graphics chipsets.
+Bumblebee is an effort to make NVIDIA Optimus enabled laptops work in
+GNU/Linux systems. These laptops are built in such a way that the NVIDIA
+graphics card can be used on demand so that battery life is improved and
+temperature is kept low.
 
-A primary goal of this project is to not only enable use of the discrete GPU
-for rendering, but also to enable smart power management of the dGPU when
-it's not in use.
+It disables the discrete graphics card if no client is detected, and start
+an X server making use of NVIDIA card if requested then let software GL
+implementations (such as VirtualGL or primus) copy frames to the visible
+display that runs on the integrated graphics.
 
-%prep
-%setup -q -a1
+This package only provides features for using the proprietary nvidia drivers.
+Users of the libre nouveau driver should prefer using DRI PRIME over
+Bumblebee: https://nouveau.freedesktop.org/wiki/Optimus
 
-%build
-%configure \
-
-%if %{with nvidia}
-    CONF_DRIVER=nvidia \
-    CONF_DRIVER_MODULE_NVIDIA=nvidia-current \
-%else
-    CONF_DRIVER=nouveau \
-%endif
-%ifarch x86_64
-    CONF_LDPATH_NVIDIA=%{_usr}/lib/nvidia-current:%{_libdir}/nvidia-current \
-    CONF_MODPATH_NVIDIA=%{_usr}/lib/nvidia-current/xorg,%{_libdir}/nvidia-current/xorg,%{_usr}/lib/xorg/modules,%{_libdir}/xorg/modules,%{_usr}/lib/xorg/extra-modules,%{_usr}/xorg/extra-modules
-%else
-    CONF_LDPATH_NVIDIA=%{_usr}/lib/nvidia-current \
-    CONF_MODPATH_NVIDIA=%{_usr}/lib/nvidia-current/xorg,%{_usr}/lib/xorg/modules,%{_usr}/lib/xorg/extra-modules
-%endif
-
-
-%make
-
-%install
-%makeinstall_std
-rm -f %{buildroot}/%{_datadir}/doc/bumblebee/README.markdown
-echo "nvidia && bumblebee" > %{buildroot}%{_sysconfdir}/bumblebee/modprobe.conf
-mkdir -p %{buildroot}/etc/systemd/system
-cp scripts/systemd/bumblebeed.service %{buildroot}/etc/systemd/system/bumblebeed.service
-install -d %{buildroot}%{_presetdir}
-cat > %{buildroot}%{_presetdir}/86-bumblebee.preset << EOF
-enable bumblebeed.service
-EOF
-
-mv %{buildroot}/%{_bindir}/optirun %{buildroot}/%{_bindir}/optirun-bin
-install -m 0755 bumblebee-mdv/bin/bumblebee-add-groups %{buildroot}%{_bindir}/bumblebee-add-groups
-install -m 0755 bumblebee-mdv/bin/optirun %{buildroot}%{_bindir}/optirun
-
-mkdir -p %{buildroot}/%{_datadir}/polkit-1/actions
-cp -a bumblebee-mdv/bin/bumblebee.add-groups.policy %{buildroot}/%{_datadir}/polkit-1/actions
-
-# translations
-find bumblebee-mdv/po/* -type d | \
-while read d
-do
-    lang=`basename $d`
-    mkdir -p %{buildroot}%{_datadir}/locale/$lang/LC_MESSAGES
-    msgfmt -o %{buildroot}%{_datadir}/locale/$lang/LC_MESSAGES/bumblebee-add-groups.mo $d/bumblebee-add-groups.po
-done
-
-#icons
-mkdir -p %{buildroot}/%{_iconsdir}
-cp bumblebee-mdv/bumblebee.png %{buildroot}/%{_iconsdir}
+%files
+%doc README.install.urpmi README.markdown doc/RELEASE_NOTES_3_2_1
+%{_sysconfdir}/bash_completion.d/optirun
+%{_sysconfdir}/modprobe.d/%{name}.conf
+%dir %{_sysconfdir}/bumblebee/
+%config(noreplace) %{_sysconfdir}/bumblebee/xorg.conf.nouveau
+%config(noreplace) %{_sysconfdir}/bumblebee/xorg.conf.nvidia
+%config(noreplace) %{_sysconfdir}/bumblebee/xorg.conf.d/10-dummy.conf
+%{_udevrulesdir}/99-bumblebee-nvidia-dev.rules
+%{_systemunitdir}/bumblebeed.service
+%{_presetdir}/86-bumblebee.preset
+%{_sbindir}/bumblebeed
+%{_bindir}/bumblebee-bugreport
+%{_bindir}/optirun
+%{_mandir}/man1/bumblebeed.1.*
+%{_mandir}/man1/optirun.1.*
 
 %pre
 %_pre_groupadd %{name}
@@ -106,12 +73,7 @@ if [ "$1" -eq "1" ]; then
 fi
 
 %post
-# blacklist nouveau
-grub2-cfg-mod --add "rdblacklist=nouveau"
-update-grub2
-# run bumblebeed
-%systemd_post bumblebeed.service
-# Simple: still needs this since in release 3 services were not set
+# simplew: still needs this since in release 3 services were not set
 # enabled and seams that still isnt properly handeled in %%_post_service
 if [ "$1" -ge "1" ]; then
 # Enable (but don't start) the unit by default
@@ -123,46 +85,97 @@ fi
 %postun
 # We need this since "%%_postun_groupdel %%{name}" doesnt remove the group if
 # set to a user
-if [ "$1" -eq "0" ]; then
+if [ "$1" -eq "0" ];then
     /usr/sbin/groupdel bumblebee
 fi
-# un-blacklist nouveau on uninstall
-if [ "$1" -eq "0" ];then
-    grub2-cfg-mod --del "rdblacklist=nouveau"
-    update-grub2
-fi
 
-%systemd_postun bumblebeed.service
+#--------------------------------------------------------------------
 
-# Simple: we need to ensure bumblebee group isnt removed when upgrading
-%triggerpostun -- %{name} < 3.2.1-1
-%_pre_groupadd %{name}
-users=$(getent passwd | awk -F: '$3 >= 500 && $3 < 60000 {print $1}')
-for user in $users; do
-    gpasswd -a $user bumblebee
-done
+%package nvidia
+Summary:	Bumblebee configuration files and binaries for nvidia-current driver
+Group:		System/Kernel and hardware
+Requires:	%{name} = %{EVRD}
+Requires:	x11-driver-video-nvidia-current
+Requires:	primus-nvidia
+Obsoletes:	%{name}-nouveau < 3.2.1-3
+Provides:	%{name}-bin = %{EVRD}
 
-%files
-%defattr(0755,root,root)
-%doc README.markdown
-%{_sysconfdir}/bash_completion.d/bumblebee
-%dir %{_sysconfdir}/bumblebee
-%{_sysconfdir}/bumblebee/bumblebee.conf
-%{_sysconfdir}/bumblebee/xorg.conf.nouveau
-%{_sysconfdir}/bumblebee/xorg.conf.nvidia
-%dir %{_sysconfdir}/bumblebee/xorg.conf.d
-%{_sysconfdir}/bumblebee/xorg.conf.d/10-dummy.conf
-%{_sysconfdir}/systemd/system/bumblebeed.service
-%{_sysconfdir}/bumblebee/modprobe.conf
-%{_presetdir}/86-bumblebee.preset
-%{_sbindir}/bumblebeed
-%{_bindir}/optirun
-%{_bindir}/optirun-bin
-%{_bindir}/bumblebee-add-groups
-%{_bindir}/bumblebee-bugreport
-%{_mandir}/man1/bumblebeed.1*
-%{_mandir}/man1/optirun.1*
-%{_iconsdir}/bumblebee.png
-%{_localedir}/*
-%{_datadir}/polkit-1/actions/bumblebee.add-groups.policy
-/lib/udev/rules.d/99-bumblebee-nvidia-dev.rules
+%description nvidia
+Bumblebee configuration files and binaries built against
+the nvidia-current driver.
+
+%files nvidia
+%config(noreplace) %{_sysconfdir}/bumblebee/bumblebee.conf
+%{_bindir}/nvidia-settings-bumblebee
+
+#--------------------------------------------------------------------
+
+%prep
+%setup -q -n %{name}-%{version}
+
+%build
+autoreconf -vfi
+
+%configure \
+    --with-udev-rules=%{_udevrulesdir} \
+    CONF_BRIDGE=primus \
+    CONF_DRIVER=nvidia \
+    CONF_DRIVER_MODULE_NVIDIA=nvidia-current \
+%ifarch x86_64
+    CONF_LDPATH_NVIDIA=%{_libdir}/nvidia-current:%{_usr}/lib/nvidia-current \
+    CONF_MODPATH_NVIDIA=%{_libdir}/nvidia-current/xorg,%{_usr}/lib/nvidia-current/xorg,%{_libdir}/xorg/modules,%{_usr}/lib/xorg/modules \
+    CONF_PRIMUS_LD_PATH=%{_libdir}/primus:%{_usr}/lib/primus
+%else
+    CONF_LDPATH_NVIDIA=%{_libdir}/nvidia-current \
+    CONF_MODPATH_NVIDIA=%{_libdir}/nvidia-current/xorg,%{_libdir}/xorg/modules \
+    CONF_PRIMUS_LD_PATH=%{_libdir}/primus
+%endif
+
+%make
+
+%install
+%makeinstall_std
+install -D -m644 scripts/systemd/bumblebeed.service %{buildroot}%{_systemunitdir}/bumblebeed.service
+
+install -d %{buildroot}%{_presetdir}
+cat > %{buildroot}%{_presetdir}/86-bumblebee.preset << EOF
+enable bumblebeed.service
+EOF
+
+install -d %{buildroot}%{_sysconfdir}/modprobe.d
+cat << EOF > %{buildroot}%{_sysconfdir}/modprobe.d/%{name}.conf
+blacklist nvidia-current
+blacklist nouveau
+
+# Map removal of modules to correct command
+# This allows modprobe -r nvidia to work
+remove nvidia rmmod nvidia
+
+# Needed for bumblebee as it tries to remove nvidia-current, which is the module
+# load name. The driver is still "nvidia" once loaded, thus the removal fails.
+remove nvidia-current rmmod nvidia
+
+# Switch card off when booting, on when unloading bbswitch (shutdown)
+options bbswitch load_state=0 unload_state=1
+EOF
+
+# Tell users to add themselves to the bumblebee group on new installs
+cat << EOF > README.install.urpmi
+
+To be able to use bumblebee via the 'optirun' or 'primusrun' commands,
+user accounts must be part of the "bumblebee" group.
+
+You can add yourself (or any user) to the "bumblebee" group with:
+  # gpasswd -a <username> bumblebee
+
+EOF
+
+install -D -m644 conf/bumblebee.conf %{buildroot}%{_sysconfdir}/bumblebee/bumblebee.conf
+
+# Create nvidia-settings launcher script
+cat << EOF > nvidia-settings-bumblebee
+#!/bin/sh
+optirun -b none %{_libdir}/nvidia-current/bin/nvidia-settings -c :8
+EOF
+
+install -D -m755 nvidia-settings-bumblebee %{buildroot}%{_bindir}/nvidia-settings-bumblebee
