@@ -4,7 +4,7 @@
 
 Name:		bumblebee
 Version:	3.2.1
-Release:	3.%{snap}.1
+Release:	7.%{snap}.1
 Summary:	Daemon managing Nvidia Optimus hybrid graphics cards
 Group:		System/Kernel and hardware
 License:	GPLv3+
