@@ -4,7 +4,7 @@
 
 Name:		bumblebee
 Version:	3.2.1
-Release:	7.%{snap}.1
+Release:	8.%{snap}.1
 Summary:	Daemon managing Nvidia Optimus hybrid graphics cards
 Group:		System/Kernel and hardware
 License:	GPLv3+
@@ -19,7 +19,7 @@ BuildRequires:	pkgconfig(libbsd)
 BuildRequires:	pkgconfig(libkmod)
 Requires(pre):	rpm-helper
 Requires(pre):	update-alternatives
-Requires:	kmod(bbswitch.ko)
+Requires:	kmod(bbswitch)
 Requires:	%{name}-bin
 Excludearch:	%{armx}
 # VirtualGl is the default bridge for upstream, the alternative being primus
