@@ -55,7 +55,7 @@ Bumblebee: https://nouveau.freedesktop.org/wiki/Optimus
 %config(noreplace) %{_sysconfdir}/bumblebee/xorg.conf.nvidia
 %config(noreplace) %{_sysconfdir}/bumblebee/xorg.conf.d/10-dummy.conf
 %{_udevrulesdir}/99-bumblebee-nvidia-dev.rules
-%{_systemunitdir}/bumblebeed.service
+%{_unitdir}/bumblebeed.service
 %{_presetdir}/86-bumblebee.preset
 %{_sbindir}/bumblebeed
 %{_bindir}/bumblebee-bugreport
@@ -136,7 +136,7 @@ autoreconf -vfi
 
 %install
 %makeinstall_std
-install -D -m644 scripts/systemd/bumblebeed.service %{buildroot}%{_systemunitdir}/bumblebeed.service
+install -D -m644 scripts/systemd/bumblebeed.service %{buildroot}%{_unitdir}/bumblebeed.service
 
 install -d %{buildroot}%{_presetdir}
 cat > %{buildroot}%{_presetdir}/86-bumblebee.preset << EOF
