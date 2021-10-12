@@ -115,6 +115,7 @@ the nvidia-current driver.
 
 %prep
 %setup -q -n %{name}-%{version}
+%autopatch -p1
 
 %build
 autoreconf -vfi
