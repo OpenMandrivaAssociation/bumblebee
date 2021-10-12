@@ -4,7 +4,7 @@
 
 Name:		bumblebee
 Version:	3.2.1
-Release:	8.%{snap}.1
+Release:	9.%{snap}.1
 Summary:	Daemon managing Nvidia Optimus hybrid graphics cards
 Group:		System/Kernel and hardware
 License:	GPLv3+
@@ -12,6 +12,8 @@ URL:		https://github.com/Bumblebee-Project/bumblebee
 # git clone -b develop https://github.com/Bumblebee-Project/Bumblebee.git
 # git archive -o bumblebee-3.2.1-`date +%Y%m%d`.tar --prefix=bumblebee-3.2.1/ develop ; xz -9e bumblebee-3.2.1-`date +%Y%m%d`.tar
 Source0:	%{name}-%{version}-%{snap}.tar.xz
+# Upstream patch to fix build with new compilers.
+Patch0:		https://patch-diff.githubusercontent.com/raw/Bumblebee-Project/Bumblebee/pull/1071.patch
 BuildRequires:	help2man
 BuildRequires:	pkgconfig(x11)
 BuildRequires:	pkgconfig(glib-2.0)
@@ -132,10 +134,10 @@ autoreconf -vfi
     CONF_PRIMUS_LD_PATH=%{_libdir}/primus
 %endif
 
-%make
+%make_build
 
 %install
-%makeinstall_std
+%make_install
 install -D -m644 scripts/systemd/bumblebeed.service %{buildroot}%{_unitdir}/bumblebeed.service
 
 install -d %{buildroot}%{_presetdir}
