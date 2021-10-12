@@ -1,0 +1,249 @@
+From f94a118a88cd76e2dbea33d735bd53cf54b486a1 Mon Sep 17 00:00:00 2001
+From: Andreas Beckmann <anbe@debian.org>
+Date: Sat, 2 Jan 2021 12:29:48 +0000
+Subject: [PATCH 1/5] Fix build failure with gcc-10
+
+gcc-10 defaults to -fno-common
+see https://gcc.gnu.org/gcc-10/porting_to.html
+---
+ src/bbconfig.h         | 2 +-
+ src/bbsecondary.c      | 3 +++
+ src/bbsecondary.h      | 2 +-
+ src/switch/switching.c | 2 ++
+ src/switch/switching.h | 4 ++--
+ 5 files changed, 9 insertions(+), 4 deletions(-)
+
+diff --git a/src/bbconfig.h b/src/bbconfig.h
+index 13c9517..2a38d5b 100644
+--- a/src/bbconfig.h
++++ b/src/bbconfig.h
+@@ -103,7 +103,7 @@ enum bb_pm_method {
+     PM_VGASWITCHEROO,
+     PM_METHODS_COUNT /* not a method but a marker for the end */
+ };
+-const char *bb_pm_method_string[PM_METHODS_COUNT];
++extern const char *bb_pm_method_string[PM_METHODS_COUNT];
+ 
+ /* String buffer size */
+ #define BUFFER_SIZE 1024
+diff --git a/src/bbsecondary.c b/src/bbsecondary.c
+index 4c07ecb..e7794ea 100644
+--- a/src/bbsecondary.c
++++ b/src/bbsecondary.c
+@@ -37,6 +37,9 @@
+ #include "pci.h"
+ #include "module.h"
+ 
++/* PCI Bus ID of the discrete video card */
++struct pci_bus_id *pci_bus_id_discrete;
++
+ /**
+  * Substitutes DRIVER in the passed path
+  * @param x_conf_file A path to be processed
+diff --git a/src/bbsecondary.h b/src/bbsecondary.h
+index ba6e884..7b5628e 100644
+--- a/src/bbsecondary.h
++++ b/src/bbsecondary.h
+@@ -21,7 +21,7 @@
+ #pragma once
+ 
+ /* PCI Bus ID of the discrete video card */
+-struct pci_bus_id *pci_bus_id_discrete;
++extern struct pci_bus_id *pci_bus_id_discrete;
+ 
+ /// Start the X server by fork-exec, turn card on if needed.
+ bool start_secondary(bool);
+diff --git a/src/switch/switching.c b/src/switch/switching.c
+index 7ed716e..4872122 100644
+--- a/src/switch/switching.c
++++ b/src/switch/switching.c
+@@ -31,6 +31,8 @@ struct switching_method switching_methods[SWITCHERS_COUNT] = {
+           switcheroo_on, switcheroo_off}
+ };
+ 
++struct switching_method *switcher = NULL;
++
+ /**
+  * Enumerates through available switching methods and try a method
+  * 
+diff --git a/src/switch/switching.h b/src/switch/switching.h
+index e0a54bc..4e7b03a 100644
+--- a/src/switch/switching.h
++++ b/src/switch/switching.h
+@@ -60,10 +60,10 @@ void switcheroo_off(void);
+ 
+ /* number of switchers as defined in switching.c */
+ #define SWITCHERS_COUNT 2
+-struct switching_method switching_methods[SWITCHERS_COUNT];
++extern struct switching_method switching_methods[SWITCHERS_COUNT];
+ 
+ /* A switching method that can be used or NULL if none */
+-struct switching_method *switcher;
++extern struct switching_method *switcher;
+ 
+ struct switching_method *switcher_detect(const char *name, struct switch_info);
+ enum switch_state switch_status(void);
+
+From 9629b3b8463b2614f9c90d13edec671cacacb785 Mon Sep 17 00:00:00 2001
+From: Andreas Beckmann <anbe@debian.org>
+Date: Sat, 2 Jan 2021 12:31:44 +0000
+Subject: [PATCH 2/5] Fix bumblebeed man section, daemons are in section 8
+
+---
+ Makefile.am | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/Makefile.am b/Makefile.am
+index 78e238a..a647428 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -123,7 +123,7 @@ scripts/upstart/bumblebeed.conf: $(srcdir)/scripts/upstart/bumblebeed.conf.in
+ 	$(do_subst) < $< > $@
+ 
+ if HAVE_HELP2MAN
+-man_MANS = bumblebeed.1 optirun.1
++man_MANS = bumblebeed.8 optirun.1
+ CLEANFILES += $(man_MANS)
+ 
+ optirun.1: bin/optirun $(bin_optirun_SOURCES)
+@@ -131,9 +131,10 @@ optirun.1: bin/optirun $(bin_optirun_SOURCES)
+ 		--name='run programs on the discrete video card' \
+ 		bin/optirun
+ 
+-bumblebeed.1: bin/bumblebeed $(bin_bumblebeed_SOURCES)
++bumblebeed.8: bin/bumblebeed $(bin_bumblebeed_SOURCES)
+ 	$(HELP2MAN) --output=$@ --no-info \
+ 		--name='bumblebee daemon' \
++		--section=8 \
+ 		bin/bumblebeed
+ else
+ 	@echo "Warning: help2man not available, no man page is created."
+
+From ccd495f0c54771b03b5c5b3595091dc4b8554c41 Mon Sep 17 00:00:00 2001
+From: Andreas Beckmann <anbe@debian.org>
+Date: Sat, 2 Jan 2021 12:32:27 +0000
+Subject: [PATCH 3/5] optirun: set ENABLE_PRIMUS_LAYER=1 to enable primus-vk
+ handling
+
+See: https://github.com/felixdoerre/primus_vk
+---
+ src/optirun.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/src/optirun.c b/src/optirun.c
+index a83b31d..d9cdc5a 100644
+--- a/src/optirun.c
++++ b/src/optirun.c
+@@ -256,6 +256,9 @@ static int run_primus(int argc, char **argv) {
+   /* assume OSS drivers for primary display (Mesa for Intel) */
+   setenv("PRIMUS_libGLd", libgl_mesa, 0);
+ 
++  /* vulkan applications are handled via primus-vk */
++  setenv("ENABLE_PRIMUS_LAYER", "1", 0);
++
+   int exitcode = bb_run_fork(run_args, 0);
+   free(run_args);
+   return exitcode;
+
+From 1850511e80a0c1c0a2dda9cd7206bc5b09a36503 Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <bluca@debian.org>
+Date: Sat, 2 Jan 2021 13:20:48 +0000
+Subject: [PATCH 4/5] Increase buffer sizes to silence compiler warnings
+
+The warnings are false positives since we know the PCI bus function number is single
+digit
+---
+ src/bbsecondary.c | 4 ++--
+ src/pci.c         | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/src/bbsecondary.c b/src/bbsecondary.c
+index e7794ea..23222b8 100644
+--- a/src/bbsecondary.c
++++ b/src/bbsecondary.c
+@@ -139,10 +139,10 @@ bool start_secondary(bool need_secondary) {
+     return true;
+   //no problems, start X if not started yet
+   if (!bb_is_running(bb_status.x_pid)) {
+-    char pci_id[13];
++    char pci_id[16];
+     static char *x_conf_file;
+     // 0-255 bus, 0-31 slot, 0-7 func
+-    snprintf(pci_id, 13, "PCI:%03d:%02d:%o", pci_bus_id_discrete->bus,
++    snprintf(pci_id, sizeof(pci_id), "PCI:%03d:%02d:%o", pci_bus_id_discrete->bus,
+             pci_bus_id_discrete->slot, pci_bus_id_discrete->func);
+     if (!x_conf_file) {
+       x_conf_file = xorg_path_w_driver(bb_config.x_conf_file, bb_config.driver);
+diff --git a/src/pci.c b/src/pci.c
+index d26c24a..49ace40 100644
+--- a/src/pci.c
++++ b/src/pci.c
+@@ -54,7 +54,7 @@ int pci_parse_bus_id(struct pci_bus_id *dest, int bus_id_numeric) {
+  */
+ int pci_get_class(struct pci_bus_id *bus_id) {
+   /* the Bus ID is always of fixed length */
+-  char class_path[40];
++  char class_path[42];
+   FILE *fp;
+ 
+   snprintf(class_path, sizeof class_path,
+@@ -172,7 +172,7 @@ size_t pci_get_driver(char *dest, struct pci_bus_id *bus_id, size_t len) {
+  * @return a file handle on success, or NULL on failure
+  */
+ static int pci_config_open(struct pci_bus_id *bus_id, mode_t mode) {
+-  char config_path[41];
++  char config_path[43];
+ 
+   snprintf(config_path, sizeof config_path,
+           "/sys/bus/pci/devices/0000:%02x:%02x.%o/config", bus_id->bus,
+
+From 6640f6985782c645fe20cf1fe9de48b8adb44b68 Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <bluca@debian.org>
+Date: Sat, 2 Jan 2021 13:23:57 +0000
+Subject: [PATCH 5/5] Do not use same buffer for input/output in readlink
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+It's probably safe but slightly undefined-y, so use a separate
+buffer for output.
+
+src/pci.c:148:31: warning: passing argument 2 to ‘restrict’-qualified parameter aliases with argument 1 [-Wrestrict]
+   read_bytes = readlink(path, path, sizeof(path) - 1);
+---
+ src/pci.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/src/pci.c b/src/pci.c
+index 49ace40..fa77fff 100644
+--- a/src/pci.c
++++ b/src/pci.c
+@@ -133,7 +133,7 @@ struct pci_bus_id *pci_find_gfx_by_vendor(unsigned int vendor_id, unsigned int i
+  * buffer was too small) or 0 on error
+  */
+ size_t pci_get_driver(char *dest, struct pci_bus_id *bus_id, size_t len) {
+-  char path[1024];
++  char path[1024], resolved_path[1024];
+   ssize_t read_bytes;
+   char *name;
+ 
+@@ -145,16 +145,16 @@ size_t pci_get_driver(char *dest, struct pci_bus_id *bus_id, size_t len) {
+   /* the path to the driver if one is loaded */
+   snprintf(path, sizeof path,  "/sys/bus/pci/devices/0000:%02x:%02x.%o/driver",
+           bus_id->bus, bus_id->slot, bus_id->func);
+-  read_bytes = readlink(path, path, sizeof(path) - 1);
++  read_bytes = readlink(path, resolved_path, sizeof(resolved_path) - 1);
+   if (read_bytes < 0) {
+     /* error, assume that the driver is not loaded */
+     return 0;
+   }
+ 
+   /* readlink does not append a NULL according to the manpage */
+-  path[read_bytes] = 0;
++  resolved_path[read_bytes] = 0;
+ 
+-  name = basename(path);
++  name = basename(resolved_path);
+   /* save the name if a valid destination and buffer size was given */
+   if (dest && len > 0) {
+     strncpy(dest, name, len - 1);
