@@ -12,6 +12,11 @@ URL:		https://github.com/Bumblebee-Project/bumblebee
 # git clone -b develop https://github.com/Bumblebee-Project/Bumblebee.git
 # git archive -o bumblebee-3.2.1-`date +%Y%m%d`.tar --prefix=bumblebee-3.2.1/ develop ; xz -9e bumblebee-3.2.1-`date +%Y%m%d`.tar
 Source0:	%{name}-%{version}-%{snap}.tar.xz
+BuildRequires:	autoconf
+BuildRequires:	automake
+BuildRequires:	libtool-base
+BuildRequires:	slibtool
+BuildRequires:	make
 BuildRequires:	help2man
 BuildRequires:	pkgconfig(x11)
 BuildRequires:	pkgconfig(glib-2.0)
